@@ -14,13 +14,14 @@ abstract class Parser[T]:
     (seq forall parse) & end // note &, not &&
 
 object Parsers:
-  val todo = ??? // put the extensions here..
+  extension (s: String)
+    def charParser():Parser[Char] = new BasicParser(s.toSet)
 class BasicParser(chars: Set[Char]) extends Parser[Char]:
   override def parse(t: Char): Boolean = chars.contains(t)
   override def end: Boolean = true
 
 trait NonEmpty[T] extends Parser[T]:
-  private[this] var empty = true
+  private var empty = true
   abstract override def parse(t: T): Boolean =
     empty = false;
     super.parse(t) // who is super??
@@ -31,13 +32,25 @@ class NonEmptyParser(chars: Set[Char])
     with NonEmpty[Char]
 
 trait NotTwoConsecutive[T] extends Parser[T]:
-  val todo = ???
-// ???
+  private var previous:Option[T] = None
+  abstract override def parse(t: T): Boolean =
+    val res = previous match
+    case Some(p) if t == p => false
+    case _ => super.parse(t)
+    previous = Some(t)
+    res
+  // Alternative way:
+//  abstract override def parse(t: T): Boolean =
+//    if (previous.isDefined && previous.get == t) return false
+//    previous = Some(t)
+//    super.parse(t)
+  abstract override def end: Boolean = super.end
 
 class NotTwoConsecutiveParser(chars: Set[Char])
-    extends BasicParser(chars) // with ????
+    extends BasicParser(chars) with NotTwoConsecutive[Char]
 
 @main def checkParsers(): Unit =
+  import Parsers.*
   def parser = new BasicParser(Set('a', 'b', 'c'))
   println(parser.parseAll("aabc".toList)) // true
   println(parser.parseAll("aabcdc".toList)) // false
@@ -57,6 +70,8 @@ class NotTwoConsecutiveParser(chars: Set[Char])
   println(parserNTC.parseAll("".toList)) // true
 
   // note we do not need a class name here, we use the structural type
+  // Full linearization:
+  // NTCNE -> NonEmpty -> NotTwoConsecutive -> BasicParser -> Parser -> AnyRef -> Any
   def parserNTCNE = new BasicParser(Set('X', 'Y', 'Z'))
     with NotTwoConsecutive[Char]
     with NonEmpty[Char]
@@ -64,7 +79,7 @@ class NotTwoConsecutiveParser(chars: Set[Char])
   println(parserNTCNE.parseAll("XYYZ".toList)) // false
   println(parserNTCNE.parseAll("".toList)) // false
 
-  def sparser: Parser[Char] = ??? // "abc".charParser()
+  def sparser: Parser[Char] = "abc".charParser()
   println(sparser.parseAll("aabc".toList)) // true
   println(sparser.parseAll("aabcdc".toList)) // false
   println(sparser.parseAll("".toList)) // true
