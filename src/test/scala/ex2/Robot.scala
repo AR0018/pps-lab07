@@ -61,12 +61,12 @@ class RobotSpec extends AnyFlatSpec with Matchers:
     robot.position shouldBe (0, 2)
 
   "A RobotRepeated" should "turn correctly" in:
-    val repetitionNum = 3;
+    val repetitionNum = 3
     val robot: Robot = RobotRepeated(SimpleRobot((0, 0), Direction.North), repetitionNum)
     turnTest(robot)
 
   it should "act correctly" in:
-    val repetitionNum = 3;
+    val repetitionNum = 3
     val robot: Robot = RobotRepeated(SimpleRobot((0, 0), Direction.North), repetitionNum)
 
     robot.act()
@@ -100,4 +100,17 @@ class RobotSpec extends AnyFlatSpec with Matchers:
     robotAlwaysFails.act()
     robotAlwaysFails.position should be((0, 0))
 
-// TODO: test combination of robots
+  "A SimpleRobot with RobotWithBattery and RobotRepeated" should "act correctly" in:
+    val repetitionNum = 3
+    val batteryLevel = 100
+    val actionCost = 20
+    val robot = RobotRepeated(RobotWithBattery(
+        SimpleRobot((0, 0), Direction.North),
+        batteryLevel, actionCost),
+      repetitionNum)
+
+    robot.act()
+    robot.position should be (0, repetitionNum)
+
+    robot.act()
+    robot.position should be (0, repetitionNum + 2)
